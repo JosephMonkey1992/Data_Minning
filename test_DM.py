@@ -1,6 +1,7 @@
 """
 1/数据预处理： 标准化： Z-score, min-max, Maxabs, RobustScaler
 """
+import math
 import numpy as np
 import pandas as pd
 from sklearn import preprocessing
@@ -152,5 +153,178 @@ pd.cut(sample.normal, bins=sample.normal.quantile([0,0.5,1]), include_lowest=Tru
 聚类分析可以挖掘孤立点以发现噪声数据，因为噪声本身就是孤立点
 """
 
+"""
+a. 欧式距离：n维空间距离
+ dist(x,y) = math.pow(sum(math.pow(xi-yi, 2)), 0.5)
 
+b. 曼哈顿距离:
+d(i,j) = abs(xi-xj)+abs(yi-yj)
+
+c. 协方差covariance：
+协方差用于衡量两个变量的总体误差的期望。而方差是协方差的一种特殊情况，即当两个变量是相同的情况。
+eg: x大于自身期望时候，y小于自身期望，cov为负，反之为正。 如果cov为0，则x/y相互独立。
+
+d. 轮廓系数: https://www.jianshu.com/p/6352d9d468f8
+计算样本i到同簇其他样本的平均距离
+si接近1，则说明样本i聚类合理。
+si接近-1，则说明样本i更应该分类到另外的簇。
+若si近似为0，则说明样本i在两个簇的边界上。
+"""
+
+# 导入第三方包
+import numpy as np
+import matplotlib.pyplot as plt
+# 随机生成两组二元正态分布随机数
+np.random.seed(1234)    #这个random.seed()是一个随机数的种子，随即调用前seed 固定你的那些随机数。                              
+mean1 = [0.5, 0.5]
+cov1 = [[0.3, 0], [0, 0.1]]
+x1, y1 = np.random.multivariate_normal(mean1, cov1, 5000).T
+mean2 = [0, 8]
+cov2 = [[0.8, 0], [0, 2]]
+x2, y2 = np.random.multivariate_normal(mean2, cov2, 5000).T
+# 绘制两组数据的散点图
+plt.rcParams['axes.unicode_minus'] = False
+plt.scatter(x1, y1)
+plt.scatter(x2, y2)
+# 显示图形
+plt.show()
+
+"""
+K-means 聚类
+a. 生成哑变量 pd.get_dummies(df[], prefix='a')
+b. elbow method手肘法确定最佳k值（利用每个簇中p样本点与ci质点的SSE找，随着K增加，SSE增速变小）
+"""
+from IPython.core.interactiveshell import InteractiveShell
+InteractiveShell.ast_node_interactivity = "all"
+%matplotlib inline
+import pandas as pd
+import numpy as np
+from sklearn import preprocessing
+from sklearn.cluster import KMeans
+from sklearn.cluster import MiniBatchKMeans
+# from yellowbrick.cluster import KElbowVisualizer
+# from yellowbrick.cluster import SilhouetteVisualizer
+# from yellowbrick.cluster import InterclusterDistance
+# from yellowbrick.model_selection import LearningCurve
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set_style("whitegrid")
+sns.set_context("notebook")
+ 
+df = pd.read_excel('raw_data_k-means.xlsx')
+df['a'] = df['a'].astype(object)
+dummies = pd.get_dummies(df['a'], prefix='a')
+bcd = df.iloc[:, 2:5]
+ 
+min_max_scaler = preprocessing.MinMaxScaler()
+x_scaled = min_max_scaler.fit_transform(bcd)
+X_scaled = pd.DataFrame(x_scaled,columns=bcd.columns)
+X_scaled = pd.concat([X_scaled,dummies], axis=1,)
+ 
+# Elbow method 手肘法 1
+plt.figure(figsize=(12,9))
+ 
+model = KMeans()
+ 
+visualizer = KElbowVisualizer(model, k=(1,8))
+visualizer.fit(X_scaled)       
+visualizer.show()
+
+# Elbow method 手肘法 2
+SSE = []  # 存放每次结果的误差平方和
+for k in range(1,5):
+    estimator = KMeans(n_clusters=k)  # 构造聚类器
+    estimator.fit(X_scaled)
+    SSE.append(estimator.inertia_) # estimator.inertia_获取聚类准则的总和
+X = range(1,5)
+plt.xlabel('k')
+plt.ylabel('SSE')
+plt.plot(X,SSE,'o-')
+plt.show()
+ 
+model=MiniBatchKMeans(n_clusters=2)
+model.fit(X_scaled)
+print("Predicted labels ----")
+model.predict(X_scaled)
+df['cluster'] = model.predict(X_scaled)
+ 
+plt.figure(figsize=(12,9))
+ 
+model=MiniBatchKMeans(n_clusters=2).fit(X_scaled)
+ 
+visualizer = SilhouetteVisualizer(model, colors='yellowbrick')
+visualizer.fit(X_scaled)      
+visualizer.show()
+ 
+plt.figure(figsize=(12,9))
+ 
+visualizer = InterclusterDistance(model, min_size=10000)
+visualizer.fit(X_scaled)
+visualizer.show()
+ 
+df = pd.concat([df,X_scaled], axis=1)
+
+"""
+k-prototype 聚类算法
+"""
+
+from IPython.core.interactiveshell import InteractiveShell
+InteractiveShell.ast_node_interactivity = "all"
+%matplotlib inline
+import pandas as pd
+import numpy as np
+from sklearn import preprocessing
+from sklearn.cluster import KMeans
+from sklearn.cluster import MiniBatchKMeans
+from yellowbrick.cluster import KElbowVisualizer
+from yellowbrick.cluster import SilhouetteVisualizer
+from yellowbrick.cluster import InterclusterDistance
+from yellowbrick.model_selection import LearningCurve
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set_style("whitegrid")
+sns.set_context("notebook")
+import numpy as np
+import pandas as pd
+from kmodes.kprototypes import KPrototypes
+%matplotlib inline
+import matplotlib.pyplot as plt
+import seaborn as sns
+ 
+df = pd.read_csv('practice_2_clustering_with_cat.csv')
+df.head()
+df['a'] = df['a'].astype(object)
+ 
+X = df.iloc[:, 1:5]
+X.columns = ['a','b','c','d']
+X.head()
+ 
+min_max_scaler = preprocessing.MinMaxScaler() 
+bcd = X.iloc[:,1:4]
+x_scaled = min_max_scaler.fit_transform(bcd)
+X_scaled = pd.DataFrame(x_scaled,columns=bcd.columns)
+X = pd.concat([df['a'],X_scaled], axis=1)
+ 
+X_matrix = X.values
+cost = []
+for num_clusters in list(range(1,9)):
+    kproto = KPrototypes(n_clusters=num_clusters, init='Cao')
+    kproto.fit_predict(X_matrix, categorical=[0])
+    cost.append(kproto.cost_)
+    
+plt.plot(cost)
+pd.DataFrame(cost)
+ 
+kproto = KPrototypes(n_clusters=6, init='Cao')
+clusters = kproto.fit_predict(X_matrix, categorical=[0])
+print('====== Centriods ======')
+kproto.cluster_centroids_
+print()
+print('====== Cost ======')
+kproto.cost_
+ 
+centroids = pd.concat([pd.DataFrame(kproto.cluster_centroids_[1]),pd.DataFrame(kproto.cluster_centroids_[0])], axis=1)
+centroids
+df['cluster'] = clusters
+df.head()
 
