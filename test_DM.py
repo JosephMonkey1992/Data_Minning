@@ -57,9 +57,7 @@ plt.show()
 sample = pd.DataFrame({'id':[1,1,1,1,3,4,5],
                        'name':['Mark','Bob','Bob','Mark','Miki','Sully','Rose'],
                        'score':[80,99,99,87,77,77,np.nan],
-                       'group':[2,1,1,1,2,1,2],})
-
-# 发现重复值的方法: 重复的判断为所有字段
+                       'group':silhouette_score字段
 sample[sample.duplicated()]
 # 发现重复值的方法: 重复的判断为规定的字段
 sample[sample.duplicated(['id','name'])]
@@ -202,10 +200,10 @@ import numpy as np
 from sklearn import preprocessing
 from sklearn.cluster import KMeans
 from sklearn.cluster import MiniBatchKMeans
-# from yellowbrick.cluster import KElbowVisualizer
-# from yellowbrick.cluster import SilhouetteVisualizer
-# from yellowbrick.cluster import InterclusterDistance
-# from yellowbrick.model_selection import LearningCurve
+from yellowbrick.cluster import KElbowVisualizer
+from yellowbrick.cluster import SilhouetteVisualizer
+from yellowbrick.cluster import InterclusterDistance
+from yellowbrick.model_selection import LearningCurve
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_style("whitegrid")
@@ -226,7 +224,7 @@ plt.figure(figsize=(12,9))
  
 model = KMeans()
  
-visualizer = KElbowVisualizer(model, k=(1,8))
+visualizer = KElbowVisualizer(model, k=(1,5))
 visualizer.fit(X_scaled)       
 visualizer.show()
 
@@ -288,11 +286,31 @@ import numpy as np
 import pandas as pd
 from kmodes.kprototypes import KPrototypes
 %matplotlib inline
+import matplotlib.pyplot as pltfrom IPython.core.interactiveshell import InteractiveShell
+InteractiveShell.ast_node_interactivity = "all"
+%matplotlib inline
+import pandas as pd
+import numpy as np
+from sklearn import preprocessing
+from sklearn.cluster import KMeans
+from sklearn.cluster import MiniBatchKMeans
+from yellowbrick.cluster import KElbowVisualizer
+from yellowbrick.cluster import SilhouetteVisualizer
+from yellowbrick.cluster import InterclusterDistance
+from yellowbrick.model_selection import LearningCurve
 import matplotlib.pyplot as plt
 import seaborn as sns
+sns.set_style("whitegrid")
+sns.set_context("notebook")
+import numpy as np
+import pandas as pd
+from kmodes.kprototypes import KPrototypes
+%matplotlib inline
+import matplotlib.pyplot as plt
+import seaborn as sns
+import seaborn as sns
  
-df = pd.read_csv('practice_2_clustering_with_cat.csv')
-df.head()
+df = pd.read_excel('raw_data_k-means.xlsx')
 df['a'] = df['a'].astype(object)
  
 X = df.iloc[:, 1:5]
@@ -307,7 +325,7 @@ X = pd.concat([df['a'],X_scaled], axis=1)
  
 X_matrix = X.values
 cost = []
-for num_clusters in list(range(1,9)):
+for num_clusters in list(range(1,5)):
     kproto = KPrototypes(n_clusters=num_clusters, init='Cao')
     kproto.fit_predict(X_matrix, categorical=[0])
     cost.append(kproto.cost_)
@@ -315,7 +333,7 @@ for num_clusters in list(range(1,9)):
 plt.plot(cost)
 pd.DataFrame(cost)
  
-kproto = KPrototypes(n_clusters=6, init='Cao')
+kproto = KPrototypes(n_clusters=1, init='Cao')
 clusters = kproto.fit_predict(X_matrix, categorical=[0])
 print('====== Centriods ======')
 kproto.cluster_centroids_
